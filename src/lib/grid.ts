@@ -106,13 +106,13 @@ export function renderGrid(followers: FollowerItem[], options: GridOptions): str
         `<g clip-path="url(#avatar-${index})">` +
         `<rect width="${size}" height="${size}" fill="#e2e9e4"/>` +
         `<text x="${size / 2}" y="${size / 2}" text-anchor="middle" dominant-baseline="central" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="${Math.round(size * 0.38)}" fill="#35583f">${initial}</text>` +
-        (avatar ? `<image width="${size}" height="${size}" href="${escapeXml(avatar)}" preserveAspectRatio="xMidYMid slice"/>` : '') +
+        (avatar ? `<image width="${size}" height="${size}" href="${escapeXml(avatar)}" xlink:href="${escapeXml(avatar)}" preserveAspectRatio="xMidYMid slice"/>` : '') +
         `</g>` +
         `</g>`;
     })
     .join('');
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title description">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="title description">` +
     `<title id="title">${escapeXml(username)}'s github followers</title>` +
     `<desc id="description">${visible.length} followers shown in ${cols} columns. ${visible.map(({ login }) => escapeXml(login)).join(', ')}</desc>` +
     (cells || `<text x="${width / 2}" y="38" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#6b806f">no public followers.</text>`) +
