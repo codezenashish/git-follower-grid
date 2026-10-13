@@ -63,20 +63,22 @@ export default function Home() {
     const nextGap = g && !isNaN(Number(g)) ? Number(g) : 8;
     const nextShape = (s && ['circle', 'rounded', 'square'].includes(s) ? s : 'circle') as ShapeType;
 
-    setUsername(nextUsername);
-    setCols(nextCols);
-    setWidth(nextWidth);
-    setLimit(nextLimit);
-    setGap(nextGap);
-    setShape(nextShape);
+    startTransition(() => {
+      setUsername(nextUsername);
+      setCols(nextCols);
+      setWidth(nextWidth);
+      setLimit(nextLimit);
+      setGap(nextGap);
+      setShape(nextShape);
 
-    setAppliedOptions({
-      username: nextUsername,
-      cols: nextCols,
-      width: nextWidth,
-      limit: nextLimit,
-      gap: nextGap,
-      shape: nextShape,
+      setAppliedOptions({
+        username: nextUsername,
+        cols: nextCols,
+        width: nextWidth,
+        limit: nextLimit,
+        gap: nextGap,
+        shape: nextShape,
+      });
     });
   }, []);
 
@@ -179,9 +181,10 @@ export default function Home() {
 
   // Initial load fetch
   useEffect(() => {
-    fetchSvg();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    startTransition(() => {
+      void fetchSvg();
+    });
+  }, [fetchSvg]);
 
   // Update button handler
   const handleUpdate = (e?: React.FormEvent) => {
@@ -431,6 +434,7 @@ export default function Home() {
               </div>
             ) : svgBlobUrl ? (
               <div className="max-w-full overflow-auto flex justify-center py-1">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={svgBlobUrl}
                   alt={`${appliedOptions.username}'s github followers`}

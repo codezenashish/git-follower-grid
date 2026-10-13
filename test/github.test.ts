@@ -10,7 +10,7 @@ test('githubClient: paginates past 100 followers and limits concurrency', async 
   let maxActive = 0;
 
   const getFollowers = createGithubClient({
-    fetch: (async (input: RequestInfo | URL, init?: RequestInit) => {
+    fetch: (async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
       calls.push(url);
 
