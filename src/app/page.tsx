@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useState, useEffect, useCallback, useTransition, useSyncExternalStore } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,6 +11,21 @@ import { Sun, Moon, Copy, Check } from 'lucide';
 import { Download, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
 
 type ShapeType = 'circle' | 'rounded' | 'square';
+
+function subscribeTheme(callback: () => void) {
+  if (typeof document === 'undefined') return () => {};
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  return () => observer.disconnect();
+}
+
+function getThemeSnapshot() {
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
+}
+
+function getServerSnapshot() {
+  return false;
+}
 
 export default function Home() {
   // Form input states
@@ -23,7 +38,7 @@ export default function Home() {
 
   // Preview & Canvas states
   const [canvasDark, setCanvasDark] = useState(false);
-  const [isSiteDark, setIsSiteDark] = useState(false);
+  const isSiteDark = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerSnapshot);
   const [copied, setCopied] = useState(false);
 
   // Applied options state for API call
@@ -82,14 +97,18 @@ export default function Home() {
     });
   }, []);
 
-  // Sync document dark mode
-  useEffect(() => {
-    if (isSiteDark) {
+  // Instant synchronous theme toggle handler (0ms delay)
+  const toggleSiteTheme = useCallback(() => {
+    if (typeof document === 'undefined') return;
+    const isDarkNow = document.documentElement.classList.contains('dark');
+    if (!isDarkNow) {
       document.documentElement.classList.add('dark');
+      try { localStorage.setItem('theme', 'dark'); } catch {}
     } else {
       document.documentElement.classList.remove('dark');
+      try { localStorage.setItem('theme', 'light'); } catch {}
     }
-  }, [isSiteDark]);
+  }, []);
 
   // Generate API URL
   const queryParams = new URLSearchParams({
@@ -262,13 +281,13 @@ export default function Home() {
 
           <button
             type="button"
-            onClick={() => setIsSiteDark((o) => !o)}
+            onClick={toggleSiteTheme}
             aria-expanded={isSiteDark}
             aria-label={isSiteDark ? 'Switch to light mode' : 'Switch to dark mode'}
             title={isSiteDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border/60 bg-background/60 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border/60 bg-background/60 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors duration-100 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
-            <MorphIcon icon={isSiteDark ? Sun : Moon} size={15} />
+            <MorphIcon icon={isSiteDark ? Sun : Moon} size={15} spring="snappy" />
           </button>
         </div>
         {/* Controls Form */}
@@ -383,7 +402,7 @@ export default function Home() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 font-medium rounded-md transition-all shadow-xs disabled:opacity-50 lowercase cursor-pointer"
+                className="w-full h-11 bg-neutral-900 text-neutral-100 hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-200 font-medium rounded-md transition-colors shadow-xs disabled:opacity-50 lowercase cursor-pointer"
               >
                 {isLoading ? (
                   <>
@@ -416,7 +435,7 @@ export default function Home() {
 
           {/* Follower Grid Canvas */}
           <div
-            className={`rounded-lg p-6 min-h-[220px] flex items-center justify-center overflow-x-auto transition-colors duration-200 border border-border/60 ${
+            className={`rounded-lg p-6 min-h-[220px] flex items-center justify-center overflow-x-auto border border-border/60 ${
               canvasDark
                 ? 'bg-[#0d1117] text-white shadow-inner'
                 : 'bg-muted/20 text-neutral-900'
@@ -438,7 +457,7 @@ export default function Home() {
                 <img
                   src={svgBlobUrl}
                   alt={`${appliedOptions.username}'s github followers`}
-                  className="max-w-none transition-all duration-200"
+                  className="max-w-none"
                   style={{ maxWidth: '100%', height: 'auto' }}
                 />
               </div>
@@ -493,11 +512,12 @@ export default function Home() {
               onClick={handleCopy}
               aria-label={copied ? 'Copied' : 'Copy markdown'}
               title={copied ? 'Copied' : 'Copy markdown'}
-              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border/60 bg-background/60 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring select-none"
+              className="h-8 w-8 inline-flex items-center justify-center rounded-md border border-border/60 bg-background/60 hover:bg-muted/60 text-muted-foreground hover:text-foreground transition-colors duration-100 cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring select-none"
             >
               <MorphIcon
                 icon={copied ? Check : Copy}
                 size={15}
+                spring="snappy"
                 className={copied ? 'text-emerald-500 transition-colors' : 'transition-colors'}
               />
             </button>
@@ -523,7 +543,15 @@ export default function Home() {
         {/* Minimal Footer */}
         <footer className="pt-8 border-t border-border/40 text-center small-text font-mono">
           <p>
-            github follower grid · dynamic svg generator
+            made by{' '}
+            <a
+              href="https://ashishchoudhary.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:underline underline-offset-4 transition-colors font-medium"
+            >
+              Ashish Choudhary
+            </a>
           </p>
         </footer>
       </main>
