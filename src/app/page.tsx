@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback, useTransition, useSyncExternalStore } from 'react';
+import { useState, useEffect, useCallback, useTransition } from 'react';
+import { useTheme } from 'next-themes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,24 +13,16 @@ import { Download, ExternalLink, RefreshCw, AlertCircle } from 'lucide-react';
 
 type ShapeType = 'circle' | 'rounded' | 'square';
 
-function subscribeTheme(callback: () => void) {
-  if (typeof document === 'undefined') return () => {};
-  const observer = new MutationObserver(callback);
-  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-  return () => observer.disconnect();
-}
-
-function getThemeSnapshot() {
-  return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
-}
-
-function getServerSnapshot() {
-  return false;
-}
-
 export default function Home() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Form input states
-  const [username, setUsername] = useState('octocat');
+  const [username, setUsername] = useState('torvalds');
   const [cols, setCols] = useState(8);
   const [width, setWidth] = useState(640);
   const [limit, setLimit] = useState(40);
@@ -38,12 +31,12 @@ export default function Home() {
 
   // Preview & Canvas states
   const [canvasDark, setCanvasDark] = useState(false);
-  const isSiteDark = useSyncExternalStore(subscribeTheme, getThemeSnapshot, getServerSnapshot);
+  const isSiteDark = mounted ? resolvedTheme === 'dark' : false;
   const [copied, setCopied] = useState(false);
 
   // Applied options state for API call
   const [appliedOptions, setAppliedOptions] = useState({
-    username: 'octocat',
+    username: 'torvalds',
     cols: 8,
     width: 640,
     limit: 40,
@@ -71,7 +64,7 @@ export default function Home() {
     const g = params.get('gap');
     const s = params.get('shape');
 
-    const nextUsername = u || 'octocat';
+    const nextUsername = u || 'torvalds';
     const nextCols = c && !isNaN(Number(c)) ? Number(c) : 8;
     const nextWidth = w && !isNaN(Number(w)) ? Number(w) : 640;
     const nextLimit = l && !isNaN(Number(l)) ? Number(l) : 40;
@@ -97,22 +90,14 @@ export default function Home() {
     });
   }, []);
 
-  // Instant synchronous theme toggle handler (0ms delay)
+  // Theme toggle handler using next-themes
   const toggleSiteTheme = useCallback(() => {
-    if (typeof document === 'undefined') return;
-    const isDarkNow = document.documentElement.classList.contains('dark');
-    if (!isDarkNow) {
-      document.documentElement.classList.add('dark');
-      try { localStorage.setItem('theme', 'dark'); } catch {}
-    } else {
-      document.documentElement.classList.remove('dark');
-      try { localStorage.setItem('theme', 'light'); } catch {}
-    }
-  }, []);
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  }, [resolvedTheme, setTheme]);
 
   // Generate API URL
   const queryParams = new URLSearchParams({
-    username: appliedOptions.username.trim() || 'octocat',
+    username: appliedOptions.username.trim() || 'torvalds',
     cols: String(appliedOptions.cols),
     width: String(appliedOptions.width),
     limit: String(appliedOptions.limit),
@@ -209,7 +194,7 @@ export default function Home() {
   const handleUpdate = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const newOptions = {
-      username: username.trim() || 'octocat',
+      username: username.trim() || 'torvalds',
       cols: Number(cols) || 8,
       width: Number(width) || 640,
       limit: Number(limit) || 40,
@@ -307,7 +292,7 @@ export default function Home() {
               autoComplete="off"
               spellCheck={false}
               autoCapitalize="none"
-              placeholder="octocat"
+              placeholder="torvalds"
               className="h-11 bg-muted/40 border-border text-foreground font-medium rounded-md focus-visible:ring-1 focus-visible:ring-foreground/40"
             />
           </div>
